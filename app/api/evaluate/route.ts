@@ -3,6 +3,24 @@ import { NextResponse } from "next/server";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "stepfun/step-3.5-flash:free";
 
+function extractJSON(text: string): unknown {
+  // Remove markdown code blocks
+  let cleaned = text.replace(/```json\n?|\n?```/g, "").trim();
+  // Remove BOM
+  cleaned = cleaned.replace(/^\uFEFF/, "").trim();
+  // Try direct parse first
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Try to find JSON object in the response
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      return JSON.parse(match[0]);
+    }
+    throw new Error("Could not extract JSON from response");
+  }
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -101,12 +119,23 @@ Respond with ONLY the JSON object.`,
       return NextResponse.json({ error: "No response from AI." }, { status: 500 });
     }
 
-    const cleaned = content.replace(/```json\n?|\n?```/g, "").trim();
-    const result = JSON.parse(cleaned);
+    let result: unknown;
+    try {
+      result = extractJSON(content);
+    } catch {
+      console.error("Evaluate JSON parse error. Raw content:", content.slice(0, 500));
+      return NextResponse.json({ error: "AI returned malformed data. Please try again." }, { status: 500 });
+    }
 
     return NextResponse.json(result);
   } catch (error) {
     console.error("Evaluate API error:", error);
+    const isNetworkError =
+      error instanceof TypeError &&
+      (error.message === "fetch failed" || error.message.includes("network"));
+    if (isNetworkError) {
+      return NextResponse.json({ error: "Could not reach AI service. Please try again later." }, { status: 503 });
+    }
     return NextResponse.json({ error: "Failed to evaluate submission. Please try again." }, { status: 500 });
   }
 }
