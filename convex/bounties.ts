@@ -118,7 +118,7 @@ export const approve = mutation({
     if (!bounty) throw new Error("Bounty not found");
 
     await ctx.db.patch(args.bountyId, {
-      status: "completed",
+      status: "completed" as const,
       completedAt: Date.now(),
     });
 
@@ -150,6 +150,24 @@ export const approve = mutation({
       });
     }
 
+    return { success: true };
+  },
+});
+
+export const reject = mutation({
+  args: {
+    bountyId: v.id("bounties"),
+    claimId: v.id("claims"),
+    reviewNotes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Reopen the bounty so it can be claimed again
+    await ctx.db.patch(args.bountyId, { status: "open" });
+    await ctx.db.patch(args.claimId, {
+      status: "rejected",
+      reviewNotes: args.reviewNotes,
+      reviewedAt: Date.now(),
+    });
     return { success: true };
   },
 });

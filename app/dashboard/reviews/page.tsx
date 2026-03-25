@@ -1,7 +1,46 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Nav } from "@/app/components/nav";
+
+function DashNav({ active }: { active: string }) {
+  const links = [
+    { href: "/dashboard", label: "Overview" },
+    { href: "/dashboard/claims", label: "My Claims" },
+    { href: "/dashboard/reviews", label: "Reviews" },
+  ];
+  return (
+    <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--rule)", marginBottom: 40 }}>
+      {links.map(l => (
+        <Link
+          key={l.href}
+          href={l.href}
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 10,
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+            padding: "12px 20px",
+            textDecoration: "none",
+            color: active === l.label ? "var(--ink)" : "var(--ink-muted)",
+            borderBottom: active === l.label ? "2px solid var(--ink)" : "2px solid transparent",
+            marginBottom: -1,
+            transition: "color 0.2s",
+          }}
+        >
+          {l.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function isConvexId(id: string) {
+  return id.length > 10 && !/^\d+$/.test(id) && !id.startsWith("pr") && !id.startsWith("d");
+}
 
 interface EvalResult {
   score: number;
@@ -113,6 +152,12 @@ export default function ReviewsPage() {
   const [evalResults, setEvalResults] = useState<Record<string, EvalResult>>({});
   const [evaluating, setEvaluating] = useState<Record<string, boolean>>({});
   const [evalErrors, setEvalErrors] = useState<Record<string, string>>({});
+  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
+  const [disputeFiled, setDisputeFiled] = useState(false);
+
+  const approveBounty = useMutation(api.bounties.approve);
+  const rejectBounty = useMutation(api.bounties.reject);
+  const createEval = useMutation(api.evaluations.create);
 
   async function runEvaluation(review: typeof PENDING_REVIEWS[number]) {
     setEvaluating(e => ({ ...e, [review.id]: true }));
@@ -135,6 +180,20 @@ export default function ReviewsPage() {
         setEvalErrors(e => ({ ...e, [review.id]: data.error || "Evaluation failed." }));
       } else {
         setEvalResults(r => ({ ...r, [review.id]: data }));
+        // Persist to Convex if we have real IDs
+        if (isConvexId(review.id)) {
+          try {
+            await createEval({
+              bountyId: review.id as Id<"bounties">,
+              claimId: review.id as Id<"claims">, // reviews carry claimId in real data
+              evaluatorType: "ai",
+              score: data.score,
+              maxScore: 100,
+              notes: data.summary,
+              recommendation: data.recommendation,
+            });
+          } catch { /* non-critical: eval display still works */ }
+        }
       }
     } catch {
       setEvalErrors(e => ({ ...e, [review.id]: "Network error. Please try again." }));
@@ -142,10 +201,23 @@ export default function ReviewsPage() {
       setEvaluating(ev => ({ ...ev, [review.id]: false }));
     }
   }
-  const [disputeFiled, setDisputeFiled] = useState(false);
 
-  function handleReviewAction(reviewId: string, action: string) {
-    setReviewActions(prev => ({ ...prev, [reviewId]: action }));
+  async function handleReviewAction(review: typeof PENDING_REVIEWS[number], action: string) {
+    setActionErrors(prev => ({ ...prev, [review.id]: "" }));
+    // For real Convex IDs, call mutations
+    if (isConvexId(review.id)) {
+      try {
+        if (action === "approved") {
+          await approveBounty({ bountyId: review.id as Id<"bounties">, claimId: review.id as Id<"claims"> });
+        } else if (action === "rejected") {
+          await rejectBounty({ bountyId: review.id as Id<"bounties">, claimId: review.id as Id<"claims"> });
+        }
+      } catch (e: unknown) {
+        setActionErrors(prev => ({ ...prev, [review.id]: e instanceof Error ? e.message : "Action failed." }));
+        return;
+      }
+    }
+    setReviewActions(prev => ({ ...prev, [review.id]: action }));
   }
 
   function fileDispute() {
@@ -159,17 +231,14 @@ export default function ReviewsPage() {
 
       <div className="frame" style={{ paddingTop: 60, paddingBottom: 80 }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
-          <div>
-            <div className="ed-label">Evaluations &amp; Disputes</div>
-            <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(28px, 3.5vw, 42px)", lineHeight: 1.15 }}>
-              Review submissions.<br />Resolve disputes.
-            </h1>
-          </div>
-          <Link href="/dashboard" style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--ink-muted)", textDecoration: "none" }}>
-            &larr; Back to dashboard
-          </Link>
+        <div style={{ marginBottom: 32 }}>
+          <div className="ed-label">Dashboard</div>
+          <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(24px, 3vw, 36px)", lineHeight: 1.15 }}>
+            Reviews &amp; Disputes
+          </h1>
         </div>
+
+        <DashNav active="Reviews" />
 
         {/* Section 1: Pending Reviews */}
         <div className="dash-section">
@@ -278,6 +347,9 @@ export default function ReviewsPage() {
                   </div>
 
                   {/* Actions */}
+                  {actionErrors[review.id] && (
+                    <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--red)", marginBottom: 12 }}>{actionErrors[review.id]}</div>
+                  )}
                   {reviewActions[review.id] ? (
                     <div style={{
                       padding: 20,
@@ -299,11 +371,11 @@ export default function ReviewsPage() {
                     </div>
                   ) : (
                     <div style={{ display: "flex", gap: 12 }}>
-                      <button onClick={() => handleReviewAction(review.id, "approved")} className="claim-btn">
+                      <button onClick={() => handleReviewAction(review, "approved")} className="claim-btn">
                         Accept
                       </button>
                       <button
-                        onClick={() => handleReviewAction(review.id, "changes")}
+                        onClick={() => handleReviewAction(review, "changes")}
                         style={{
                           fontFamily: "var(--sans)",
                           fontSize: 11,
@@ -320,7 +392,7 @@ export default function ReviewsPage() {
                         Request Changes
                       </button>
                       <button
-                        onClick={() => handleReviewAction(review.id, "rejected")}
+                        onClick={() => handleReviewAction(review, "rejected")}
                         style={{
                           fontFamily: "var(--sans)",
                           fontSize: 11,

@@ -1,19 +1,42 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePrivy } from "@privy-io/react-auth";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Nav } from "@/app/components/nav";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user, authenticated, login } = usePrivy();
+  const upsertUser = useMutation(api.users.upsert);
   const [role, setRole] = useState<"founder" | "agent" | null>(null);
   const [agentType, setAgentType] = useState<"claude" | "openclaw" | "human" | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   async function finish() {
+    if (!authenticated || !user) {
+      login();
+      return;
+    }
     setSaving(true);
-    // TODO: call Convex users.upsert mutation with role + agentType
-    await new Promise(r => setTimeout(r, 600));
-    router.push("/dashboard");
+    setError("");
+    try {
+      const wallet = user.wallet?.address ?? "";
+      await upsertUser({
+        privyId: user.id,
+        walletAddress: wallet,
+        email: user.email?.address,
+        name: user.email?.address?.split("@")[0] ?? wallet.slice(0, 8),
+        role: role!,
+        agentType: role === "agent" ? agentType ?? undefined : undefined,
+      });
+      router.push("/dashboard");
+    } catch (e) {
+      setError("Failed to save profile. Please try again.");
+      setSaving(false);
+    }
   }
 
   return (
@@ -94,6 +117,10 @@ export default function OnboardingPage() {
             </div>
           )}
 
+          {error && (
+            <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--red)", marginBottom: 16, textAlign: "center" }}>{error}</div>
+          )}
+
           {/* Continue button */}
           {role && (role === "founder" || agentType) && (
             <button
@@ -102,7 +129,7 @@ export default function OnboardingPage() {
               disabled={saving}
               style={{ width: "100%", textAlign: "center", fontSize: 12 }}
             >
-              {saving ? "Setting up your account..." : "Continue to dashboard →"}
+              {saving ? "Setting up your account..." : !authenticated ? "Connect wallet & continue →" : "Continue to dashboard →"}
             </button>
           )}
         </div>
