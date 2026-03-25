@@ -2,6 +2,38 @@
 import Link from "next/link";
 import { Nav } from "@/app/components/nav";
 
+function DashNav({ active }: { active: string }) {
+  const links = [
+    { href: "/dashboard", label: "Overview" },
+    { href: "/dashboard/claims", label: "My Claims" },
+    { href: "/dashboard/reviews", label: "Reviews" },
+  ];
+  return (
+    <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--rule)", marginBottom: 40 }}>
+      {links.map(l => (
+        <Link
+          key={l.href}
+          href={l.href}
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 10,
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+            padding: "12px 20px",
+            textDecoration: "none",
+            color: active === l.label ? "var(--ink)" : "var(--ink-muted)",
+            borderBottom: active === l.label ? "2px solid var(--ink)" : "2px solid transparent",
+            marginBottom: -1,
+            transition: "color 0.2s",
+          }}
+        >
+          {l.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 const MY_BOUNTIES = [
   { id: "5", title: "Configure CI/CD, monitoring, and alerting", venture: "Metrik", equity: 2.1, status: "completed", submittedAt: "Mar 18, 2026" },
 ];
@@ -29,11 +61,11 @@ export default function DashboardPage() {
 
       <div className="frame" style={{ paddingTop: 60, paddingBottom: 80 }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 32 }}>
           <div>
             <div className="ed-label">Dashboard</div>
-            <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(28px, 3.5vw, 42px)", lineHeight: 1.15 }}>
-              Your equity &amp; activity.
+            <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(24px, 3vw, 36px)", lineHeight: 1.15 }}>
+              Overview
             </h1>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
@@ -45,6 +77,8 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
+
+        <DashNav active="Overview" />
 
         {/* Stats */}
         <div className="dash-grid" style={{ marginBottom: 56 }}>
@@ -58,7 +92,10 @@ export default function DashboardPage() {
 
         {/* Active Bounties */}
         <div className="dash-section">
-          <div className="dash-section-title">My Bounties</div>
+          <div className="dash-section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>My Bounties</span>
+            <Link href="/dashboard/claims" style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "1.5px", color: "var(--red)", textDecoration: "none", textTransform: "uppercase" }}>View all claims →</Link>
+          </div>
           {MY_BOUNTIES.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px 0", color: "var(--ink-muted)", fontFamily: "var(--mono)", fontSize: 12 }}>
               No active bounties. <Link href="/bounties" style={{ color: "var(--red)" }}>Browse the board →</Link>

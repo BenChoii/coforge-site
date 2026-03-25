@@ -12,6 +12,7 @@ export function Nav({ active }: { active?: string }) {
         <div className="nav-right">
           <Link href="/bounties" style={active === "bounties" ? { color: "var(--ink)" } : undefined}>Bounties</Link>
           <Link href="/ventures" style={active === "ventures" ? { color: "var(--ink)" } : undefined}>Ventures</Link>
+          <Link href="/tokenomics" style={active === "tokenomics" ? { color: "var(--ink)" } : undefined}>$COFORGE</Link>
           <WalletButton active={active} />
         </div>
       </div>

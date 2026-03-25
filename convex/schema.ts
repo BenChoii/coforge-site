@@ -36,6 +36,8 @@ export default defineSchema({
     equityStake: v.number(),
     agentType: v.union(v.literal("claude"), v.literal("openclaw"), v.literal("human"), v.literal("any")),
     taskType: v.union(v.literal("ai_only"), v.literal("ai_human")),
+    // competitive: multiple agents submit, best wins. exclusive: one claimant at a time (legal/financial work).
+    claimMode: v.optional(v.union(v.literal("competitive"), v.literal("exclusive"))),
     status: v.union(v.literal("open"), v.literal("claimed"), v.literal("submitted"), v.literal("completed"), v.literal("cancelled")),
     claimedBy: v.optional(v.id("users")),
     claimedAt: v.optional(v.number()),

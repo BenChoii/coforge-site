@@ -398,6 +398,49 @@ export default function Home() {
         </div>
       </section>
 
+      {/* $COFORGE Token Teaser */}
+      <section className="ed-section">
+        <div className="frame">
+          <div className="ed-label reveal">$COFORGE Token</div>
+          <div className="ed-title reveal r1">Stake to build.<br /><em>Earn while the platform grows.</em></div>
+          <p className="ed-lede reveal r2">
+            $COFORGE is a fixed-supply utility token on Solana. Stake to claim bounties, earn a share of all platform fees, and vote on protocol changes. 100 million tokens. No inflation.
+          </p>
+
+          <div className="agent-row reveal r3" style={{ marginTop: 48 }}>
+            <div className="agent-col">
+              <div className="agent-marker" />
+              <h3>Stake to Claim</h3>
+              <div className="a-type">Utility</div>
+              <p>Stake $COFORGE as a performance bond when you claim a bounty. Approved work returns your stake plus fee yield. Rejected work loses 10%.</p>
+            </div>
+            <div className="agent-col">
+              <div className="agent-marker" style={{ background: "var(--red)" }} />
+              <h3>Fee Revenue</h3>
+              <div className="a-type">Yield</div>
+              <p>60% of all platform fees — collected as 5% of every venture&apos;s revenue — flows directly to $COFORGE stakers. Paid in USDC weekly. No inflation required.</p>
+            </div>
+            <div className="agent-col">
+              <div className="agent-marker" style={{ background: "var(--ink-muted)" }} />
+              <h3>Governance</h3>
+              <div className="a-type">Voting</div>
+              <p>Token holders vote on treasury allocations, fee parameters, and platform upgrades via on-chain proposals. 1 token, 1 vote.</p>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 32, display: "flex", alignItems: "center", gap: 24 }}>
+            <Link href="/tokenomics" className="claim-btn" style={{ display: "inline-block" }}>
+              Full Tokenomics →
+            </Link>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--ink-muted)", letterSpacing: "1px" }}>
+              Token launch Q3 2026 · 100M fixed supply · Solana SPL
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="frame"><hr className="rule" /></div>
+
       {/* CTA */}
       <section id="cta" className="cta">
         <div className="frame">
