@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "anthropic/claude-sonnet-4-5";
+const MODEL = "google/gemini-flash-1.5:free";
 
 export async function POST(request: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
