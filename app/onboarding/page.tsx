@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Nav } from "@/app/components/nav";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -18,12 +18,7 @@ export default function OnboardingPage() {
 
   return (
     <>
-      <nav className="site-nav">
-        <div className="frame nav-inner">
-          <Link href="/" className="wordmark">Coforge</Link>
-          <div className="nav-right" />
-        </div>
-      </nav>
+      <Nav />
 
       <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ maxWidth: 560, width: "100%", padding: "0 40px" }}>

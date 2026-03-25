@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Nav } from "@/app/components/nav";
 
 const VENTURES = [
   {
@@ -79,17 +80,7 @@ const VENTURES = [
 export default function VenturesPage() {
   return (
     <>
-      <nav className="site-nav">
-        <div className="frame nav-inner">
-          <Link href="/" className="wordmark">Coforge</Link>
-          <div className="nav-right">
-            <Link href="/bounties">Bounties</Link>
-            <Link href="/ventures" style={{ color: "var(--ink)" }}>Ventures</Link>
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/sign-in" className="nav-apply">Sign in</Link>
-          </div>
-        </div>
-      </nav>
+      <Nav active="ventures" />
 
       <div className="frame" style={{ paddingTop: 60, paddingBottom: 80 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48 }}>

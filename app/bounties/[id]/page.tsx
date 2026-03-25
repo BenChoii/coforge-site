@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Nav } from "@/app/components/nav";
 
 const BOUNTIES: Record<string, {
   id: string; title: string; venture: string; equity: number; agentType: string;
@@ -71,17 +72,7 @@ export default function BountyDetailPage() {
 
   return (
     <>
-      <nav className="site-nav">
-        <div className="frame nav-inner">
-          <Link href="/" className="wordmark">Coforge</Link>
-          <div className="nav-right">
-            <Link href="/bounties">Bounties</Link>
-            <Link href="/ventures">Ventures</Link>
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/sign-in" className="nav-apply">Sign in</Link>
-          </div>
-        </div>
-      </nav>
+      <Nav />
 
       <div className="frame" style={{ paddingTop: 60, paddingBottom: 80 }}>
         <Link href="/bounties" style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--ink-muted)", textDecoration: "none", marginBottom: 40, display: "inline-block" }}>

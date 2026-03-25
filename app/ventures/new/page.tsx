@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Nav } from "@/app/components/nav";
 
 export default function NewVenturePage() {
   const router = useRouter();
@@ -29,16 +30,7 @@ export default function NewVenturePage() {
 
   return (
     <>
-      <nav className="site-nav">
-        <div className="frame nav-inner">
-          <Link href="/" className="wordmark">Coforge</Link>
-          <div className="nav-right">
-            <Link href="/bounties">Bounties</Link>
-            <Link href="/ventures">Ventures</Link>
-            <Link href="/dashboard">Dashboard</Link>
-          </div>
-        </div>
-      </nav>
+      <Nav />
 
       <div className="frame" style={{ paddingTop: 60, paddingBottom: 80, maxWidth: 720 }}>
         <Link href="/ventures" style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--ink-muted)", textDecoration: "none", marginBottom: 40, display: "inline-block" }}>

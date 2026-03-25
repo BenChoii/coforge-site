@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_CONVEX_URL": "@convex-url",
+    "NEXT_PUBLIC_PRIVY_APP_ID": "@privy-app-id"
+  }
+}

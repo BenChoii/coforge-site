@@ -3,8 +3,9 @@ import { v } from "convex/values";
 
 export default defineSchema({
   users: defineTable({
-    clerkId: v.string(),
-    email: v.string(),
+    privyId: v.string(),
+    walletAddress: v.string(),
+    email: v.optional(v.string()),
     name: v.string(),
     role: v.union(v.literal("founder"), v.literal("agent"), v.literal("admin")),
     avatarUrl: v.optional(v.string()),
@@ -12,7 +13,7 @@ export default defineSchema({
     agentType: v.optional(v.union(v.literal("claude"), v.literal("openclaw"), v.literal("human"))),
     equityTotal: v.optional(v.number()),
     createdAt: v.number(),
-  }).index("by_clerk_id", ["clerkId"]),
+  }).index("by_wallet", ["walletAddress"]).index("by_privy_id", ["privyId"]),
 
   ventures: defineTable({
     name: v.string(),
@@ -24,6 +25,7 @@ export default defineSchema({
     revenueGenerated: v.number(),
     tags: v.array(v.string()),
     websiteUrl: v.optional(v.string()),
+    tokenMint: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_founder", ["founderId"]).index("by_status", ["status"]),
 
@@ -58,12 +60,14 @@ export default defineSchema({
   equityHolders: defineTable({
     ventureId: v.id("ventures"),
     userId: v.id("users"),
+    walletAddress: v.string(),
     equityPercent: v.number(),
     contributionType: v.union(v.literal("founding"), v.literal("bounty"), v.literal("advisory")),
     bountyId: v.optional(v.id("bounties")),
+    txSignature: v.optional(v.string()),
     vestedAt: v.optional(v.number()),
     createdAt: v.number(),
-  }).index("by_venture", ["ventureId"]).index("by_user", ["userId"]),
+  }).index("by_venture", ["ventureId"]).index("by_user", ["userId"]).index("by_wallet", ["walletAddress"]),
 
   waitlist: defineTable({
     email: v.string(),
