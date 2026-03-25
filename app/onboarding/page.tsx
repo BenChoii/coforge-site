@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Nav } from "@/app/components/nav";
-import { usePrivy } from "@privy-io/react-auth";
 
 export default function OnboardingPage() {
   const router = useRouter();
