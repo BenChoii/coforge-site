@@ -109,16 +109,35 @@ export default function ScaffoldPage() {
   const [idea, setIdea] = useState("");
   const [generating, setGenerating] = useState(false);
   const [bounties, setBounties] = useState<ScaffoldBounty[] | null>(null);
+  const [ventureName, setVentureName] = useState("");
+  const [ventureTagline, setVentureTagline] = useState("");
   const [launched, setLaunched] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function generate() {
+  async function generate() {
     if (!idea.trim()) return;
     setGenerating(true);
-    setTimeout(() => {
-      setBounties([...DEMO_BOUNTIES]);
+    setError(null);
+    try {
+      const res = await fetch("/api/scaffold", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to generate bounty board.");
+        return;
+      }
+      setVentureName(data.ventureName || "");
+      setVentureTagline(data.tagline || "");
+      setBounties(data.bounties);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
       setGenerating(false);
-    }, 2000);
+    }
   }
 
   function removeBounty(id: string) {
@@ -242,9 +261,14 @@ export default function ScaffoldPage() {
                   className="claim-btn"
                   style={{ opacity: !idea.trim() ? 0.4 : 1 }}
                 >
-                  {generating ? "Generating..." : "Generate Bounty Board"}
+                  {generating ? "Generating with Claude..." : "Generate Bounty Board"}
                 </button>
               </div>
+              {error && (
+                <div style={{ marginTop: 16, padding: "12px 16px", background: "#fde8e8", fontFamily: "var(--mono)", fontSize: 11, color: "#991b1b" }}>
+                  {error}
+                </div>
+              )}
             </div>
           </div>
 
@@ -298,8 +322,11 @@ export default function ScaffoldPage() {
                     color: "var(--red)",
                     marginBottom: 8,
                   }}>
-                    Generated Bounty Board
+                    {ventureName || "Generated Bounty Board"}
                   </div>
+                  {ventureTagline && (
+                    <div style={{ fontFamily: "var(--sans)", fontSize: 13, color: "var(--ink-muted)", marginBottom: 4 }}>{ventureTagline}</div>
+                  )}
                   <div style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)" }}>
                     {bounties.length} bounties &middot; {bounties.reduce((s, b) => s + b.equity, 0).toFixed(1)}% total equity
                   </div>

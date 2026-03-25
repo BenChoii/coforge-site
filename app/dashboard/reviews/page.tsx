@@ -3,28 +3,41 @@ import { useState } from "react";
 import Link from "next/link";
 import { Nav } from "@/app/components/nav";
 
+interface EvalResult {
+  score: number;
+  recommendation: "approve" | "request_changes" | "reject";
+  summary: string;
+  strengths: string[];
+  issues: string[];
+  criteriaResults: Array<{ criterion: string; met: boolean; notes: string }>;
+}
+
 const PENDING_REVIEWS = [
   {
     id: "pr1",
     bountyTitle: "Build payments dashboard with Stripe webhooks",
+    description: "Build a payments dashboard that displays transaction history, subscription status, and webhook event logs using Stripe's API.",
     venture: "ScreenCraft",
-    submitter: "0x7f...a3d2",
+    submitter: "7xK2...m9f3",
     submittedAt: "Mar 22, 2026",
     submissionUrl: "https://github.com/screencraft/payments-dashboard/pull/14",
     equity: 3.2,
-    aiScore: 87,
-    aiNotes: "Code quality is strong. Stripe webhook handlers cover all major events (payment_intent.succeeded, customer.subscription.updated, invoice.payment_failed). Test coverage at 82%. Minor issue: rate limiting middleware is configured but not applied to the webhook endpoint. Recommend approval with a follow-up task for rate limiting.",
+    requirements: ["Stripe API integration", "Webhook handler for payment events", "Dashboard UI with transaction history", "Error handling and logging"],
+    deliverables: ["Working dashboard page", "Webhook endpoint", "Test coverage >80%"],
+    criteria: ["All Stripe webhook events handled with idempotency", "Dashboard shows last 30 days of transactions", "Payment failure alerts configured", "Test suite passes in CI"],
   },
   {
     id: "pr2",
     bountyTitle: "Implement document RAG pipeline",
+    description: "Build a retrieval-augmented generation pipeline for processing and querying legal documents using embeddings and vector search.",
     venture: "LegalLens",
-    submitter: "0x3a...f1c8",
+    submitter: "3aF1...c8d2",
     submittedAt: "Mar 23, 2026",
     submissionUrl: "https://github.com/legallens/rag-pipeline/pull/7",
     equity: 4.5,
-    aiScore: 72,
-    aiNotes: "RAG pipeline functional but retrieval accuracy is below threshold on legal document edge cases. Embedding model choice (all-MiniLM-L6-v2) may be undersized for domain-specific legal text. Chunking strategy needs refinement. Recommend requesting changes: switch to a legal-domain embedding model and add evaluation benchmarks.",
+    requirements: ["Document ingestion pipeline", "Embedding generation", "Vector store integration", "Query endpoint with context retrieval"],
+    deliverables: ["Ingestion script", "Query API endpoint", "Evaluation benchmark results"],
+    criteria: ["Retrieval accuracy >85% on test set", "P95 query latency <2s", "Handles PDFs up to 200 pages", "Chunking strategy documented"],
   },
 ];
 
@@ -97,6 +110,38 @@ export default function ReviewsPage() {
   const [expandedDispute, setExpandedDispute] = useState<string | null>(null);
   const [reviewActions, setReviewActions] = useState<Record<string, string>>({});
   const [disputeForm, setDisputeForm] = useState({ bountyId: "", reason: "", evidenceUrl: "" });
+  const [evalResults, setEvalResults] = useState<Record<string, EvalResult>>({});
+  const [evaluating, setEvaluating] = useState<Record<string, boolean>>({});
+  const [evalErrors, setEvalErrors] = useState<Record<string, string>>({});
+
+  async function runEvaluation(review: typeof PENDING_REVIEWS[number]) {
+    setEvaluating(e => ({ ...e, [review.id]: true }));
+    setEvalErrors(e => ({ ...e, [review.id]: "" }));
+    try {
+      const res = await fetch("/api/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bountyTitle: review.bountyTitle,
+          bountyDescription: review.description,
+          requirements: review.requirements,
+          deliverables: review.deliverables,
+          criteria: review.criteria,
+          submissionUrl: review.submissionUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEvalErrors(e => ({ ...e, [review.id]: data.error || "Evaluation failed." }));
+      } else {
+        setEvalResults(r => ({ ...r, [review.id]: data }));
+      }
+    } catch {
+      setEvalErrors(e => ({ ...e, [review.id]: "Network error. Please try again." }));
+    } finally {
+      setEvaluating(ev => ({ ...ev, [review.id]: false }));
+    }
+  }
   const [disputeFiled, setDisputeFiled] = useState(false);
 
   function handleReviewAction(reviewId: string, action: string) {
@@ -163,17 +208,73 @@ export default function ReviewsPage() {
 
                   {/* AI Evaluation */}
                   <div style={{ background: "var(--cream)", border: "1px solid var(--rule)", padding: 24, marginBottom: 20 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                       <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--ink-muted)" }}>
-                        AI Evaluation
+                        AI Evaluation (Claude Opus)
                       </div>
-                      <div style={{ fontFamily: "var(--serif)", fontSize: 28, fontWeight: 500, color: review.aiScore >= 80 ? "var(--ink)" : "var(--red)" }}>
-                        {review.aiScore}<span style={{ fontSize: 14, color: "var(--ink-muted)" }}>/100</span>
-                      </div>
+                      {evalResults[review.id] && (
+                        <div style={{ fontFamily: "var(--serif)", fontSize: 28, fontWeight: 500, color: evalResults[review.id].score >= 80 ? "var(--ink)" : evalResults[review.id].score >= 60 ? "var(--ink-muted)" : "var(--red)" }}>
+                          {evalResults[review.id].score}<span style={{ fontSize: 14, color: "var(--ink-muted)" }}>/100</span>
+                        </div>
+                      )}
                     </div>
-                    <p style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.8, letterSpacing: "0.2px" }}>
-                      {review.aiNotes}
-                    </p>
+                    {!evalResults[review.id] ? (
+                      <div>
+                        {evalErrors[review.id] && (
+                          <p style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--red)", marginBottom: 12 }}>{evalErrors[review.id]}</p>
+                        )}
+                        <button
+                          onClick={() => runEvaluation(review)}
+                          disabled={evaluating[review.id]}
+                          style={{ padding: "10px 20px", background: "var(--ink)", color: "var(--paper)", border: "none", fontFamily: "var(--mono)", fontSize: 11, letterSpacing: "1.5px", textTransform: "uppercase", cursor: evaluating[review.id] ? "wait" : "pointer", opacity: evaluating[review.id] ? 0.6 : 1 }}
+                        >
+                          {evaluating[review.id] ? "Evaluating..." : "Run AI Evaluation"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        <p style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.8, margin: 0 }}>
+                          {evalResults[review.id].summary}
+                        </p>
+                        {evalResults[review.id].strengths.length > 0 && (
+                          <div>
+                            <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 6 }}>Strengths</div>
+                            {evalResults[review.id].strengths.map((s, i) => (
+                              <div key={i} style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-soft)", marginBottom: 4 }}>✓ {s}</div>
+                            ))}
+                          </div>
+                        )}
+                        {evalResults[review.id].issues.length > 0 && (
+                          <div>
+                            <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--red)", marginBottom: 6 }}>Issues</div>
+                            {evalResults[review.id].issues.map((s, i) => (
+                              <div key={i} style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--red)", marginBottom: 4 }}>✗ {s}</div>
+                            ))}
+                          </div>
+                        )}
+                        {evalResults[review.id].criteriaResults.length > 0 && (
+                          <div>
+                            <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--ink-muted)", marginBottom: 8 }}>Criteria</div>
+                            {evalResults[review.id].criteriaResults.map((c, i) => (
+                              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
+                                <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: c.met ? "var(--ink)" : "var(--red)", flexShrink: 0 }}>{c.met ? "✓" : "✗"}</span>
+                                <div>
+                                  <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-soft)" }}>{c.criterion}</div>
+                                  {c.notes && <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--ink-muted)", marginTop: 2 }}>{c.notes}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => runEvaluation(review)}
+                          disabled={evaluating[review.id]}
+                          style={{ alignSelf: "flex-start", padding: "6px 12px", background: "transparent", color: "var(--ink-muted)", border: "1px solid var(--rule)", fontFamily: "var(--mono)", fontSize: 10, cursor: "pointer", letterSpacing: "1px" }}
+                        >
+                          Re-evaluate
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
