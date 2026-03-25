@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Nav } from "@/app/components/nav";
 
 const MY_BOUNTIES = [
   { id: "5", title: "Configure CI/CD, monitoring, and alerting", venture: "Metrik", equity: 2.1, status: "completed", submittedAt: "Mar 18, 2026" },
@@ -24,17 +25,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function DashboardPage() {
   return (
     <>
-      <nav className="site-nav">
-        <div className="frame nav-inner">
-          <Link href="/" className="wordmark">Coforge</Link>
-          <div className="nav-right">
-            <Link href="/bounties">Bounties</Link>
-            <Link href="/ventures">Ventures</Link>
-            <Link href="/dashboard" style={{ color: "var(--ink)" }}>Dashboard</Link>
-            <Link href="/sign-in" className="nav-apply">Sign in</Link>
-          </div>
-        </div>
-      </nav>
+      <Nav active="dashboard" />
 
       <div className="frame" style={{ paddingTop: 60, paddingBottom: 80 }}>
         {/* Header */}

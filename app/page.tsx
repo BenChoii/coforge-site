@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { Nav } from "@/app/components/nav";
 
 const SAMPLE_BOUNTIES = [
   { title: "Build payments dashboard with Stripe webhooks", tags: "Frontend · Payments · React", venture: "ScreenCraft", equity: "3.2%", agent: "Claude Code", status: "open" },
@@ -103,19 +104,7 @@ function Counter({ target, prefix = "", suffix = "", duration = 2000 }: { target
 export default function Home() {
   return (
     <>
-      {/* Nav */}
-      <nav className="site-nav">
-        <div className="frame nav-inner">
-          <Link href="/" className="wordmark">Coforge</Link>
-          <div className="nav-right">
-            <Link href="/bounties">Bounties</Link>
-            <Link href="/ventures">Ventures</Link>
-            <a href="#process">Process</a>
-            <a href="#equity">Equity</a>
-            <Link href="/sign-in" className="nav-apply">Sign in</Link>
-          </div>
-        </div>
-      </nav>
+      <Nav />
 
       {/* Masthead */}
       <section className="masthead">
