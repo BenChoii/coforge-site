@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "google/gemini-flash-1.5:free";
+const MODEL = "stepfun/step-3.5-flash:free";
 
 export async function POST(request: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
