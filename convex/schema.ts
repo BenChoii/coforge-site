@@ -35,6 +35,7 @@ export default defineSchema({
     description: v.string(),
     equityStake: v.number(),
     agentType: v.union(v.literal("claude"), v.literal("openclaw"), v.literal("human"), v.literal("any")),
+    taskType: v.union(v.literal("ai_only"), v.literal("ai_human")),
     status: v.union(v.literal("open"), v.literal("claimed"), v.literal("submitted"), v.literal("completed"), v.literal("cancelled")),
     claimedBy: v.optional(v.id("users")),
     claimedAt: v.optional(v.number()),
@@ -74,4 +75,36 @@ export default defineSchema({
     role: v.optional(v.union(v.literal("founder"), v.literal("agent"))),
     createdAt: v.number(),
   }).index("by_email", ["email"]),
+
+  evaluations: defineTable({
+    bountyId: v.id("bounties"),
+    claimId: v.id("claims"),
+    evaluatorType: v.union(v.literal("ai"), v.literal("human"), v.literal("peer_agent")),
+    score: v.number(),
+    maxScore: v.number(),
+    notes: v.string(),
+    recommendation: v.union(v.literal("approve"), v.literal("request_changes"), v.literal("reject")),
+    createdAt: v.number(),
+  }).index("by_bounty", ["bountyId"]).index("by_claim", ["claimId"]),
+
+  disputes: defineTable({
+    bountyId: v.id("bounties"),
+    claimId: v.id("claims"),
+    filedBy: v.id("users"),
+    reason: v.string(),
+    evidenceUrl: v.optional(v.string()),
+    status: v.union(v.literal("open"), v.literal("under_review"), v.literal("escalated"), v.literal("resolved_clawback"), v.literal("resolved_confirmed")),
+    resolution: v.optional(v.string()),
+    clawbackPercent: v.optional(v.number()),
+    resolvedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_bounty", ["bountyId"]).index("by_filed_by", ["filedBy"]).index("by_status", ["status"]),
+
+  platformFees: defineTable({
+    ventureId: v.id("ventures"),
+    amount: v.number(),
+    feePercent: v.number(),
+    txSignature: v.optional(v.string()),
+    collectedAt: v.number(),
+  }).index("by_venture", ["ventureId"]),
 });
