@@ -1,19 +1,23 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Nav } from "@/app/components/nav";
 
-const PLATFORM_FEE_PCT = 5;    // % of all revenue, collected via Stripe Connect
-const PLATFORM_EQUITY_PCT = 5; // % equity retained on formation
+const PLATFORM_FEE_PCT = 5;
+const PLATFORM_EQUITY_PCT = 5;
 
 const STEP_LABELS = ["Basics", "Equity", "Agreement", "Connect Stripe"];
 
 export default function NewVenturePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [connectError, setConnectError] = useState("");
+  // ventureId is created in Convex when the founder reaches step 4
+  const [pendingVentureId, setPendingVentureId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     tagline: "",
@@ -22,6 +26,11 @@ export default function NewVenturePage() {
     websiteUrl: "",
     equityPool: "30",
   });
+
+  // Handle return from partial Stripe onboarding
+  const stripeIncomplete = searchParams.get("stripe_incomplete");
+  const resumeAccountId = searchParams.get("account_id");
+  const resumeVentureId = searchParams.get("venture_id");
 
   function update(field: string, value: string) {
     setForm(f => ({ ...f, [field]: value }));
@@ -32,12 +41,44 @@ export default function NewVenturePage() {
 
   async function connectStripe() {
     setSubmitting(true);
-    // In production: redirect to Stripe Connect OAuth
-    // GET /api/stripe/connect?ventureId=...
-    // Stripe redirects back to /api/stripe/connect/callback
-    // Callback stores stripeConnectedAccountId in Convex
-    await new Promise(r => setTimeout(r, 1000));
-    router.push("/ventures");
+    setConnectError("");
+
+    // If returning from incomplete onboarding, re-use the existing account
+    if (stripeIncomplete && resumeAccountId && resumeVentureId) {
+      const res = await fetch("/api/stripe/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ventureId: resumeVentureId,
+          ventureName: form.name || "Unnamed Venture",
+          resumeAccountId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setConnectError(data.error || "Failed to resume onboarding."); setSubmitting(false); return; }
+      window.location.href = data.url;
+      return;
+    }
+
+    const res = await fetch("/api/stripe/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ventureId: pendingVentureId ?? `temp-${Date.now()}`,
+        ventureName: form.name,
+        // founderEmail: could pass from Privy user here
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setConnectError(data.error || "Failed to create Stripe Connect link.");
+      setSubmitting(false);
+      return;
+    }
+
+    // Redirect browser to Stripe-hosted onboarding
+    window.location.href = data.url;
   }
 
   return (
@@ -344,6 +385,16 @@ export default function NewVenturePage() {
               </ol>
             </div>
 
+            {connectError && (
+              <div style={{ padding: "12px 16px", background: "var(--cream)", border: "1px solid var(--red)", fontFamily: "var(--mono)", fontSize: 11, color: "var(--red)" }}>
+                {connectError}
+              </div>
+            )}
+            {stripeIncomplete && (
+              <div style={{ padding: "12px 16px", background: "var(--cream)", border: "1px solid var(--rule)", fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-muted)" }}>
+                You left Stripe onboarding early. Click below to resume — your account was saved.
+              </div>
+            )}
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <button onClick={() => setStep(3)} style={{ padding: "12px 24px", background: "transparent", border: "1px solid var(--rule)", fontFamily: "var(--mono)", fontSize: 11, cursor: "pointer", color: "var(--ink-muted)", letterSpacing: "1px" }}>
                 ← Back
@@ -354,7 +405,11 @@ export default function NewVenturePage() {
                 disabled={submitting}
                 style={{ padding: "14px 28px" }}
               >
-                {submitting ? "Connecting..." : "Connect Stripe & launch venture →"}
+                {submitting
+                  ? "Opening Stripe..."
+                  : stripeIncomplete
+                  ? "Resume Stripe onboarding →"
+                  : "Connect Stripe & launch venture →"}
               </button>
               <span style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--ink-faint)", letterSpacing: "0.5px" }}>
                 Secured by Stripe
