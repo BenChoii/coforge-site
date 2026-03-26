@@ -400,9 +400,25 @@ export default function TokenomicsPage() {
       <section className="ed-section">
         <div className="frame">
           <div className="ed-label reveal">Fee Distribution</div>
-          <div className="ed-title reveal r1">5% of every venture dollar.<br /><em>Distributed three ways.</em></div>
+          <div className="ed-title reveal r1">5% of every venture dollar.<br /><em>Enforced at the infrastructure layer.</em></div>
+          <p className="ed-lede reveal r2" style={{ marginBottom: 40 }}>
+            The fee isn&apos;t collected on an honor system. Every venture must connect a Stripe account through CoForge&apos;s Stripe Connect platform. The 5% application fee is deducted automatically before funds reach the founder — no invoicing, no trust required.
+          </p>
+          <div style={{ background: "var(--ink)", padding: "28px 32px", marginBottom: 48, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
+            {[
+              { step: "Customer pays", desc: "Founder's payment form processes the charge through CoForge's Stripe platform account." },
+              { step: "5% auto-deducted", desc: "Stripe applies application_fee_amount at the infrastructure layer. No founder action needed." },
+              { step: "Founder gets 95%", desc: "The rest settles to the founder's connected account on Stripe's normal payout schedule." },
+            ].map((s, i) => (
+              <div key={i}>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(246,243,237,0.4)", marginBottom: 8 }}>Step {i + 1}</div>
+                <div style={{ fontFamily: "var(--sans)", fontSize: 13, fontWeight: 600, color: "var(--paper)", marginBottom: 6 }}>{s.step}</div>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "rgba(246,243,237,0.5)", lineHeight: 1.7 }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginTop: 48 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, marginTop: 0 }}>
             {/* Visual bars */}
             <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", overflow: "hidden" }}>
               <div className="cap-table-head">
