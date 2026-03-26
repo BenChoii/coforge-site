@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       type: "express",
       email: founderEmail ?? undefined,
       metadata: {
-        ventureId,
+        ventureId, // used by account.updated webhook to find venture in Convex
         ventureName,
       },
       capabilities: {

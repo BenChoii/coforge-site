@@ -10,9 +10,10 @@ import { stripe, applicationFee } from "@/lib/stripe";
  *   - 95% → venture's connected Stripe account (transfer_data.destination)
  *
  * Body: {
- *   amountCents: number,       // e.g. 5000 for $50.00
- *   currency: string,          // e.g. "usd"
+ *   amountCents: number,        // e.g. 5000 for $50.00
+ *   currency: string,           // e.g. "usd"
  *   connectedAccountId: string, // venture's acct_... from Stripe
+ *   ventureId: string,          // Convex venture ID — stored in metadata so webhook can record fee
  *   description?: string,
  *   metadata?: Record<string, string>
  * }
@@ -22,12 +23,12 @@ import { stripe, applicationFee } from "@/lib/stripe";
  */
 export async function POST(request: Request) {
   try {
-    const { amountCents, currency = "usd", connectedAccountId, description, metadata } =
+    const { amountCents, currency = "usd", connectedAccountId, ventureId, description, metadata } =
       await request.json();
 
-    if (!amountCents || !connectedAccountId) {
+    if (!amountCents || !connectedAccountId || !ventureId) {
       return NextResponse.json(
-        { error: "amountCents and connectedAccountId are required." },
+        { error: "amountCents, connectedAccountId, and ventureId are required." },
         { status: 400 }
       );
     }
@@ -52,7 +53,8 @@ export async function POST(request: Request) {
       description,
       metadata: {
         ...metadata,
-        platform_fee_pct: String(fee / amountCents * 100),
+        ventureId,          // used by webhook handler to call recordFee
+        platform_fee_pct: "5",
       },
     });
 
