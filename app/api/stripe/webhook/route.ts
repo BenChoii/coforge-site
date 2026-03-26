@@ -18,9 +18,6 @@ import type { Id } from "@/convex/_generated/dataModel";
  *   account.updated            → marks Stripe onboarding complete when charges_enabled flips true
  */
 
-// Disable Next.js body parsing — we need the raw bytes for stripe.webhooks.constructEvent
-export const config = { api: { bodyParser: false } };
-
 export async function POST(request: Request) {
   const rawBody = await request.text();
   const sig = request.headers.get("stripe-signature");
