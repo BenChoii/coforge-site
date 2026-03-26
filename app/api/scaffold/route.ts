@@ -50,27 +50,31 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "system",
-            content: `You are an expert startup advisor and technical architect. Break down a business idea into a concrete bounty board for AI agents and human contributors.
+            content: `You are an expert startup advisor building AI-operated businesses. Every venture on CoForge must be fully operable by AI agents after launch — no human staff, no physical operations. Break down the idea into two types of bounties: build bounties (one-time, to create the product) and operation bounties (recurring, to run the business month after month).
 
 Rules:
-- Create 6-8 specific, actionable bounties
-- ai_only: tasks completable 100% by AI (build API, write tests, configure CI, implement features)
-- ai_human: tasks requiring human judgment or real-world action (brand design, legal, interviews, strategy)
-- claimMode: "competitive" for technical/creative work (code, design, content, marketing) where multiple attempts are valuable and a founder picks the best; "exclusive" for legal/financial/compliance/blockchain tasks where only one agent should work at a time to avoid conflicting artefacts (e.g. incorporation, smart contract deployment, bank account setup)
-- Equity per bounty should reflect complexity (infrastructure 3-5%, features 2-4%, marketing 1-3%)
+- Create 8-10 bounties total: at least 4 build bounties and at least 3 operation bounties
+- bountyType: "build" for one-time delivery (product, infrastructure, brand); "operation" for recurring ongoing work (monthly content, weekly support, campaigns)
+- Operation bounties are claimed repeatedly by agents — title should make clear it repeats (e.g. "Write 4 SEO articles — [month]", "Handle customer support tickets this week")
+- ai_only: completable 100% by AI; ai_human: requires human judgment (legal, strategy, taste)
+- claimMode: "competitive" for build/creative work where best submission wins; "exclusive" for legal/financial/blockchain tasks
+- Equity: build bounties 2-5%, operation bounties 0.1-0.5% (recurring, so compounds)
 - Total equity must not exceed ${bountyPool}% (after ${founderEquity}% founder + 5% CoForge fee)
+- Only include businesses that can be run entirely by AI: SaaS, digital services, content, education, consulting, API businesses. No physical products, no brick-and-mortar.
 - Acceptance criteria must be specific and measurable
 
 Respond with ONLY valid JSON, no markdown, in this exact format:
 {
   "ventureName": "Short Name",
   "tagline": "One sentence value proposition",
+  "businessCategory": "SaaS | Digital Services | Education | Content | Consulting | API",
   "bounties": [
     {
       "id": "b1",
       "title": "Action-oriented title under 60 chars",
-      "description": "2-3 sentences on what to build and why",
+      "description": "2-3 sentences on what to build/do and why",
       "equity": 3.5,
+      "bountyType": "build",
       "taskType": "ai_only",
       "claimMode": "competitive",
       "skills": ["Skill1", "Skill2", "Skill3"],
@@ -82,7 +86,7 @@ Respond with ONLY valid JSON, no markdown, in this exact format:
           },
           {
             role: "user",
-            content: `Generate a complete bounty board for this business idea:\n\n${idea.trim()}\n\nCover the full stack needed to launch: technical infrastructure, product features, design, go-to-market, and any real-world operations. Respond with ONLY the JSON object.`,
+            content: `Generate a complete bounty board for this AI-operated business idea:\n\n${idea.trim()}\n\nInclude both build bounties (to create the product) and recurring operation bounties (to run it month after month with AI agents). The business must be fully operable by AI — no human staff required after launch. Respond with ONLY the JSON object.`,
           },
         ],
       }),

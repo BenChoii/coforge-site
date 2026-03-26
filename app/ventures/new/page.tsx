@@ -31,6 +31,7 @@ function NewVentureForm() {
     tags: "",
     websiteUrl: "",
     equityPool: "30",
+    category: "",
   });
 
   // Handle return from partial Stripe onboarding
@@ -160,6 +161,28 @@ function NewVentureForm() {
         {/* ── Step 1: Basics ─────────────────────────────────────────────── */}
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* Business category */}
+            <div>
+              <label style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "2px", textTransform: "uppercase", color: "var(--ink-muted)", display: "block", marginBottom: 8 }}>
+                Business type *
+              </label>
+              <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--ink-faint)", marginBottom: 12, lineHeight: 1.6 }}>
+                CoForge is for AI-operable businesses only — no physical operations or human staff headcount required after launch.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {["SaaS", "Digital Services", "Education", "Content / Media", "Consulting", "API / Dev Tools"].map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => update("category", cat)}
+                    className={`filter-btn ${form.category === cat ? "active" : ""}`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {["name", "tagline", "description", "tags"].map(field => (
               <div key={field}>
                 <label style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "2px", textTransform: "uppercase", color: "var(--ink-muted)", display: "block", marginBottom: 8 }}>
@@ -186,8 +209,8 @@ function NewVentureForm() {
             <button
               className="claim-btn"
               onClick={() => setStep(2)}
-              disabled={!form.name || !form.tagline || !form.description}
-              style={{ alignSelf: "flex-start", opacity: (!form.name || !form.tagline || !form.description) ? 0.4 : 1 }}
+              disabled={!form.name || !form.tagline || !form.description || !form.category}
+              style={{ alignSelf: "flex-start", opacity: (!form.name || !form.tagline || !form.description || !form.category) ? 0.4 : 1 }}
             >
               Next: Equity pool →
             </button>
