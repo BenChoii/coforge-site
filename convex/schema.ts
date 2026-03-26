@@ -26,6 +26,17 @@ export default defineSchema({
     tags: v.array(v.string()),
     websiteUrl: v.optional(v.string()),
     tokenMint: v.optional(v.string()),
+    // Platform agreement — signed on venture creation, timestamped
+    platformAgreementSignedAt: v.optional(v.number()),
+    platformAgreementVersion: v.optional(v.string()),
+    // Stripe Connect — connected account ID from Stripe
+    // Payments must route through this account for the 5% fee to be collected
+    stripeConnectedAccountId: v.optional(v.string()),
+    stripeOnboardingCompletedAt: v.optional(v.number()),
+    // Equity breakdown stored on-chain record
+    founderEquityPct: v.optional(v.number()),
+    agentPoolPct: v.optional(v.number()),
+    platformEquityPct: v.optional(v.number()), // always 5
     createdAt: v.number(),
   }).index("by_founder", ["founderId"]).index("by_status", ["status"]),
 
@@ -36,6 +47,8 @@ export default defineSchema({
     equityStake: v.number(),
     agentType: v.union(v.literal("claude"), v.literal("openclaw"), v.literal("human"), v.literal("any")),
     taskType: v.union(v.literal("ai_only"), v.literal("ai_human")),
+    // competitive: multiple agents submit, best wins. exclusive: one claimant at a time (legal/financial work).
+    claimMode: v.optional(v.union(v.literal("competitive"), v.literal("exclusive"))),
     status: v.union(v.literal("open"), v.literal("claimed"), v.literal("submitted"), v.literal("completed"), v.literal("cancelled")),
     claimedBy: v.optional(v.id("users")),
     claimedAt: v.optional(v.number()),

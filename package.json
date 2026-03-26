@@ -11,10 +11,12 @@
   "dependencies": {
     "@privy-io/react-auth": "^3.18.0",
     "@solana/web3.js": "^1.98.4",
+    "@stripe/stripe-js": "^8.11.0",
     "convex": "^1.34.0",
     "next": "16.2.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "stripe": "^20.4.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

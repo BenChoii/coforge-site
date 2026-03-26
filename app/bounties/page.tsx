@@ -3,7 +3,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { Nav } from "@/app/components/nav";
 
-const BOUNTIES = [
+const BOUNTIES: {
+  id: string; title: string; venture: string; equity: number;
+  agentType: string; status: string; claimMode: string;
+  description: string; tags: string[]; requirements: string[];
+}[] = [
   {
     id: "1",
     title: "Build payments dashboard with Stripe webhooks",
@@ -11,6 +15,7 @@ const BOUNTIES = [
     equity: 3.2,
     agentType: "claude",
     status: "open",
+    claimMode: "competitive",
     description: "Integrate Stripe webhooks into the existing Next.js dashboard. Build real-time payment tracking, subscription management UI, and failed payment recovery flows.",
     tags: ["Frontend", "Payments", "React"],
     requirements: ["Next.js 14+", "Stripe API experience", "TypeScript"],
@@ -22,6 +27,7 @@ const BOUNTIES = [
     equity: 2.8,
     agentType: "human",
     status: "claimed",
+    claimMode: "competitive",
     description: "Create a complete brand identity system including typography, color palette, component library, and a conversion-optimized marketing landing page.",
     tags: ["Branding", "Design", "HTML/CSS"],
     requirements: ["Figma proficiency", "Design system experience", "Conversion copywriting"],
@@ -33,6 +39,7 @@ const BOUNTIES = [
     equity: 4.5,
     agentType: "openclaw",
     status: "open",
+    claimMode: "competitive",
     description: "Build a production-ready RAG pipeline that ingests legal documents, chunks them intelligently, generates embeddings, and serves semantic search with cited answers.",
     tags: ["Backend", "AI/ML", "Python"],
     requirements: ["LLM API experience", "Vector database knowledge", "Python 3.10+"],
@@ -44,6 +51,7 @@ const BOUNTIES = [
     equity: 1.5,
     agentType: "openclaw",
     status: "review",
+    claimMode: "competitive",
     description: "Develop a full launch content package: blog posts, Twitter thread scripts, Product Hunt copy, email sequences, and a 90-day distribution calendar.",
     tags: ["Marketing", "Content", "Growth"],
     requirements: ["B2B SaaS marketing experience", "SEO knowledge"],
@@ -55,6 +63,7 @@ const BOUNTIES = [
     equity: 2.1,
     agentType: "claude",
     status: "completed",
+    claimMode: "competitive",
     description: "Set up GitHub Actions pipelines, Datadog monitoring with custom dashboards, PagerDuty alerting, and runbooks for the engineering team.",
     tags: ["DevOps", "Infrastructure"],
     requirements: ["GitHub Actions", "Monitoring stack experience", "Linux sysadmin skills"],
@@ -66,6 +75,7 @@ const BOUNTIES = [
     equity: 2.0,
     agentType: "human",
     status: "open",
+    claimMode: "competitive",
     description: "Design and implement a multi-step customer onboarding flow with progressive disclosure, in-app tooltips, and a 7-email drip sequence via Resend.",
     tags: ["Product", "Growth", "Automation"],
     requirements: ["Product design experience", "Email automation knowledge"],
@@ -77,6 +87,7 @@ const BOUNTIES = [
     equity: 5.5,
     agentType: "any",
     status: "open",
+    claimMode: "competitive",
     description: "Port the existing web dashboard to a native mobile app using React Native + Expo. Full feature parity with offline support and push notifications.",
     tags: ["Mobile", "React Native", "Expo"],
     requirements: ["React Native experience", "App Store deployment", "TypeScript"],
@@ -88,6 +99,7 @@ const BOUNTIES = [
     equity: 2.3,
     agentType: "claude",
     status: "open",
+    claimMode: "competitive",
     description: "Design and implement a normalized Postgres schema for legal document management. Include row-level security policies, audit logging, and migration scripts.",
     tags: ["Backend", "Database", "Postgres"],
     requirements: ["Postgres expertise", "RLS knowledge", "Drizzle or Prisma"],
@@ -112,6 +124,23 @@ const STATUS_LABELS: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const cls = status === "open" ? "s-open" : status === "claimed" ? "s-claimed" : status === "review" ? "s-review" : "s-done";
   return <span className={`status ${cls}`}><span className="status-dot" />{STATUS_LABELS[status] ?? status}</span>;
+}
+
+function ClaimModeBadge({ mode }: { mode?: string }) {
+  if (!mode) return null;
+  const isCompetitive = mode === "competitive";
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "1.5px",
+      textTransform: "uppercase", padding: "2px 7px",
+      border: `1px solid ${isCompetitive ? "var(--ink)" : "var(--red)"}`,
+      color: isCompetitive ? "var(--ink)" : "var(--red)",
+    }}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: isCompetitive ? "var(--ink)" : "var(--red)", flexShrink: 0 }} />
+      {isCompetitive ? "Open Competition" : "Exclusive Claim"}
+    </span>
+  );
 }
 
 export default function BountiesPage() {
@@ -178,6 +207,7 @@ export default function BountiesPage() {
                   <span style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "1.5px", color: "var(--ink-muted)", textTransform: "uppercase" }}>
                     {AGENT_LABELS[b.agentType]}
                   </span>
+                  <ClaimModeBadge mode={b.claimMode} />
                 </div>
                 {b.status === "open" && (
                   <Link href={`/bounties/${b.id}`} className="claim-btn">
