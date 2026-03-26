@@ -1,6 +1,5 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 
 export const list = query({
   args: {
@@ -57,16 +56,15 @@ export const create = mutation({
  */
 export const setStripeAccount = mutation({
   args: {
-    ventureId: v.string(), // string from URL param; cast to Id below
+    ventureId: v.id("ventures"),
     stripeConnectedAccountId: v.string(),
     onboardingComplete: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const ventureId = args.ventureId as Id<"ventures">;
-    const venture = await ctx.db.get(ventureId);
+    const venture = await ctx.db.get(args.ventureId);
     if (!venture) throw new Error(`Venture ${args.ventureId} not found`);
 
-    await ctx.db.patch(ventureId, {
+    await ctx.db.patch(args.ventureId, {
       stripeConnectedAccountId: args.stripeConnectedAccountId,
       stripeOnboardingCompletedAt: args.onboardingComplete ? Date.now() : undefined,
       // If onboarding is done, activate the venture

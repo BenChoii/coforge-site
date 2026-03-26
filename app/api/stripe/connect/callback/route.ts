@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 
 /**
  * GET /api/stripe/connect/callback?account_id=acct_...&venture_id=...
  *
- * Stripe redirects here after the founder completes (or exits) onboarding.
- * We verify the account exists, check its charges_enabled status,
- * then update the venture record in Convex via the HTTP API.
- *
- * The Convex mutation `ventures.setStripeAccount` stores:
- *   - stripeConnectedAccountId
- *   - stripeOnboardingCompletedAt (if charges are enabled)
+ * Stripe redirects here after the founder completes (or exits) Express onboarding.
+ * We verify the account, then persist the connected account ID to Convex.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -23,36 +21,28 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Verify the account with Stripe
+    // Verify the account status with Stripe
     const account = await stripe.accounts.retrieve(accountId);
-
     const onboardingComplete = account.charges_enabled && account.details_submitted;
 
-    // Persist to Convex via its HTTP API
+    // Update the venture record in Convex
     const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
     if (convexUrl) {
-      await fetch(`${convexUrl}/api/mutation`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          path: "ventures:setStripeAccount",
-          args: {
-            ventureId,
-            stripeConnectedAccountId: accountId,
-            onboardingComplete,
-          },
-        }),
+      const convex = new ConvexHttpClient(convexUrl);
+      await convex.mutation(api.ventures.setStripeAccount, {
+        ventureId: ventureId as Id<"ventures">,
+        stripeConnectedAccountId: accountId,
+        onboardingComplete: !!onboardingComplete,
       });
     }
 
     if (!onboardingComplete) {
-      // Founder left onboarding early — redirect back to let them retry
+      // Founder exited early — let them resume
       return NextResponse.redirect(
         `${appUrl}/ventures/new?stripe_incomplete=1&account_id=${accountId}&venture_id=${ventureId}`
       );
     }
 
-    // Full success — venture is live
     return NextResponse.redirect(`${appUrl}/ventures?connected=1`);
   } catch (error) {
     console.error("Stripe callback error:", error);

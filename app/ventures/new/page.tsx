@@ -1,7 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { usePrivy } from "@privy-io/react-auth";
 import { Nav } from "@/app/components/nav";
 
 const PLATFORM_FEE_PCT = 5;
@@ -9,9 +12,12 @@ const PLATFORM_EQUITY_PCT = 5;
 
 const STEP_LABELS = ["Basics", "Equity", "Agreement", "Connect Stripe"];
 
-export default function NewVenturePage() {
+// useSearchParams must be inside a Suspense boundary in Next.js App Router
+function NewVentureForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = usePrivy();
+  const createVenture = useMutation(api.ventures.create);
   const [step, setStep] = useState(1);
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -43,42 +49,62 @@ export default function NewVenturePage() {
     setSubmitting(true);
     setConnectError("");
 
-    // If returning from incomplete onboarding, re-use the existing account
-    if (stripeIncomplete && resumeAccountId && resumeVentureId) {
+    try {
+      // If returning from incomplete onboarding, re-use the existing Stripe account
+      if (stripeIncomplete && resumeAccountId && resumeVentureId) {
+        const res = await fetch("/api/stripe/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ventureId: resumeVentureId, ventureName: form.name || "Unnamed Venture" }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setConnectError(data.error || "Failed to resume onboarding."); setSubmitting(false); return; }
+        window.location.href = data.url;
+        return;
+      }
+
+      // Step 1: Create the venture in Convex so we have a real ID
+      let ventureId = pendingVentureId;
+      if (!ventureId) {
+        const founderId = user?.id ?? "unknown";
+        ventureId = await createVenture({
+          name: form.name,
+          tagline: form.tagline,
+          description: form.description,
+          founderId: founderId as never, // cast — real auth uses actual Convex user Id
+          tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
+          websiteUrl: form.websiteUrl || undefined,
+          founderEquityPct: founderPct,
+          agentPoolPct: agentPct,
+          platformAgreementSignedAt: Date.now(),
+        });
+        setPendingVentureId(ventureId);
+      }
+
+      // Step 2: Create Stripe Express account + onboarding link
       const res = await fetch("/api/stripe/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ventureId: resumeVentureId,
-          ventureName: form.name || "Unnamed Venture",
-          resumeAccountId,
+          ventureId,
+          ventureName: form.name,
+          founderEmail: user?.email?.address ?? undefined,
         }),
       });
+
       const data = await res.json();
-      if (!res.ok) { setConnectError(data.error || "Failed to resume onboarding."); setSubmitting(false); return; }
+      if (!res.ok) {
+        setConnectError(data.error || "Failed to create Stripe Connect link.");
+        setSubmitting(false);
+        return;
+      }
+
+      // Step 3: Redirect to Stripe-hosted KYC onboarding
       window.location.href = data.url;
-      return;
-    }
-
-    const res = await fetch("/api/stripe/connect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ventureId: pendingVentureId ?? `temp-${Date.now()}`,
-        ventureName: form.name,
-        // founderEmail: could pass from Privy user here
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      setConnectError(data.error || "Failed to create Stripe Connect link.");
+    } catch (err) {
+      setConnectError(err instanceof Error ? err.message : "Something went wrong.");
       setSubmitting(false);
-      return;
     }
-
-    // Redirect browser to Stripe-hosted onboarding
-    window.location.href = data.url;
   }
 
   return (
@@ -426,5 +452,14 @@ export default function NewVenturePage() {
         </div>
       </footer>
     </>
+  );
+}
+
+// useSearchParams requires Suspense in Next.js App Router
+export default function NewVenturePage() {
+  return (
+    <Suspense fallback={null}>
+      <NewVentureForm />
+    </Suspense>
   );
 }
